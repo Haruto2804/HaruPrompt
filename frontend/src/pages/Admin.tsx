@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2 } from 'lucide-react';
+import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2, X, Save } from 'lucide-react';
 import type { Video } from '../types';
 import { auth } from '../firebase';
 import JoditEditor from 'jodit-react';
