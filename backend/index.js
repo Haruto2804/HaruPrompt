@@ -65,9 +65,11 @@ app.get('/api/videos', async (req, res) => {
     
     if (search) {
       const searchLower = search.toLowerCase();
-      videos = videos.filter(v => 
-        v.promptText && v.promptText.toLowerCase().includes(searchLower)
-      );
+      videos = videos.filter(v => {
+        const textMatch = v.promptText && v.promptText.toLowerCase().includes(searchLower);
+        const blockMatch = v.prompts && v.prompts.some(p => p.text && p.text.toLowerCase().includes(searchLower));
+        return textMatch || blockMatch;
+      });
     }
     
     res.json(videos);
@@ -98,11 +100,16 @@ app.get('/api/videos/:id', async (req, res) => {
 // Upload route (Protected)
 app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, res) => {
   try {
-    const { promptText } = req.body;
+    const { promptText, prompts } = req.body;
     const file = req.file;
 
-    if (!file || !promptText) {
-      return res.status(400).json({ error: 'File and promptText are required' });
+    if (!file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+
+    let parsedPrompts = [];
+    if (prompts) {
+      try { parsedPrompts = JSON.parse(prompts); } catch(e) {}
     }
 
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -139,7 +146,8 @@ app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, re
     await db.collection('videos').add({
       videoUrl,
       thumbnailUrl,
-      promptText,
+      promptText: promptText || '',
+      prompts: parsedPrompts,
       createdAt: FieldValue.serverTimestamp(),
     });
 
@@ -147,12 +155,53 @@ app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, re
       success: true,
       videoUrl,
       thumbnailUrl,
-      promptText,
+      prompts: parsedPrompts,
       message: 'Upload and database save successful',
     });
   } catch (error) {
-    console.error('Upload Error:', error);
-    res.status(500).json({ error: error.message || 'Failed to upload video' });
+    console.error('Error in upload:', error);
+    res.status(500).json({ error: 'Upload failed', details: error.message });
+  }
+});
+
+// Upload image only route (Protected)
+app.post('/api/upload-image', authenticateAdmin, upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'File is required' });
+    }
+
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      return res.status(500).json({ error: 'Cloudinary config is missing' });
+    }
+
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret
+    });
+
+    const uploadToCloudinary = new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: 'image' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(file.buffer);
+    });
+
+    const result = await uploadToCloudinary;
+    res.json({ success: true, url: result.secure_url });
+  } catch (error) {
+    console.error('Error in upload-image:', error);
+    res.status(500).json({ error: 'Upload failed', details: error.message });
   }
 });
 
@@ -202,16 +251,13 @@ app.post('/api/upload-image', authenticateAdmin, upload.single('files[0]'), asyn
 app.put('/api/videos/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { promptText } = req.body;
-    
-    if (!promptText) {
-      return res.status(400).json({ error: 'promptText is required' });
-    }
+    const { promptText, prompts } = req.body;
 
-    await db.collection('videos').doc(id).update({
-      promptText,
-      updatedAt: FieldValue.serverTimestamp()
-    });
+    const updateData = { updatedAt: FieldValue.serverTimestamp() };
+    if (promptText !== undefined) updateData.promptText = promptText;
+    if (prompts !== undefined) updateData.prompts = prompts;
+
+    await db.collection('videos').doc(id).update(updateData);
 
     res.json({ success: true, message: 'Video updated successfully' });
   } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Video } from '../types';
-import { ArrowLeft, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, AlertCircle, Copy, Check } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 const VideoDetail: React.FC = () => {
@@ -10,6 +10,7 @@ const VideoDetail: React.FC = () => {
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -31,6 +32,16 @@ const VideoDetail: React.FC = () => {
       fetchVideo();
     }
   }, [id]);
+
+  const handleCopy = async (text: string, blockId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedBlockId(blockId);
+      setTimeout(() => setCopiedBlockId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -99,11 +110,52 @@ const VideoDetail: React.FC = () => {
               </p>
             </div>
 
-            <div className="prose prose-invert prose-p:text-zinc-300 prose-headings:text-white prose-a:text-blue-400 max-w-none">
-              <div
-                className="bg-zinc-900/50 p-6 sm:p-8 rounded-2xl border border-white/10 shadow-xl"
-                dangerouslySetInnerHTML={{ __html: video.promptText }}
-              />
+            <div className="space-y-6">
+              {video.prompts && video.prompts.length > 0 ? (
+                video.prompts.map((block, index) => (
+                  <div key={block.id || index} className="bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row group transition-all hover:border-white/20">
+                    {block.imageUrl && (
+                      <div className="w-full md:w-1/3 aspect-video md:aspect-auto relative shrink-0">
+                        <img src={block.imageUrl} alt="Prompt visual" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-zinc-900/80 to-transparent"></div>
+                      </div>
+                    )}
+                    <div className="p-6 sm:p-8 flex-1 flex flex-col relative">
+                      <div className="flex-1 text-zinc-300 text-lg leading-relaxed mb-6 font-medium">
+                        {block.text}
+                      </div>
+                      
+                      {block.text && (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => handleCopy(block.text || '', block.id)}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all font-medium text-sm border border-indigo-500/20 hover:border-indigo-500/40"
+                          >
+                            {copiedBlockId === block.id ? (
+                              <>
+                                <Check size={16} />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={16} />
+                                Copy Prompt
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="prose prose-invert prose-p:text-zinc-300 prose-headings:text-white prose-a:text-blue-400 max-w-none">
+                  <div
+                    className="bg-zinc-900/50 p-6 sm:p-8 rounded-2xl border border-white/10 shadow-xl"
+                    dangerouslySetInnerHTML={{ __html: video.promptText || '' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

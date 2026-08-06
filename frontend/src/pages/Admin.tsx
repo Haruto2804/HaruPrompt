@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2, X, Save, Info } from 'lucide-react';
-import type { Video } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2, X, Save, Info, Plus, Image as ImageIcon } from 'lucide-react';
+import type { Video, PromptBlock } from '../types';
 import { auth } from '../firebase';
 import JoditEditor from 'jodit-react';
 import { API_BASE_URL } from '../config';
 
 const Admin: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [promptText, setPromptText] = useState('');
+  const [prompts, setPrompts] = useState<PromptBlock[]>([{ id: Date.now().toString(), text: '' }]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
   // Edit state
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
-  const [editPromptText, setEditPromptText] = useState('');
+  const [editPrompts, setEditPrompts] = useState<PromptBlock[]>([]);
   const [updating, setUpdating] = useState(false);
 
   const [videos, setVideos] = useState<Video[]>([]);
@@ -37,10 +37,9 @@ const Admin: React.FC = () => {
     fetchToken();
   }, []);
   
-  const editor = useRef(null);
   const editorConfig = useMemo(() => ({
     theme: 'dark',
-    placeholder: 'Enter the AI prompt and format it here...',
+    placeholder: 'Enter content...',
     height: 400,
     uploader: {
       insertImageAsBase64URI: false,
@@ -73,6 +72,28 @@ const Admin: React.FC = () => {
       border: '1px solid rgba(255, 255, 255, 0.1)'
     }
   }), [authToken]);
+
+  const handleBlockImageUpload = async (file: File, blockId: string, isEdit: boolean) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/upload-image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.url) {
+        if (isEdit) {
+          setEditPrompts(prev => prev.map(b => b.id === blockId ? { ...b, imageUrl: data.url } : b));
+        } else {
+          setPrompts(prev => prev.map(b => b.id === blockId ? { ...b, imageUrl: data.url } : b));
+        }
+      }
+    } catch (err) {
+      console.error('Image upload failed', err);
+    }
+  };
 
   const fetchVideos = async () => {
     try {
@@ -114,7 +135,7 @@ const Admin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !promptText) return;
+    if (!file) return;
 
     setUploading(true);
     setError(null);
@@ -125,7 +146,7 @@ const Admin: React.FC = () => {
       
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('promptText', promptText);
+      formData.append('prompts', JSON.stringify(prompts));
 
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
@@ -143,7 +164,7 @@ const Admin: React.FC = () => {
 
       setSuccess(true);
       setFile(null);
-      setPromptText('');
+      setPrompts([{ id: Date.now().toString(), text: '' }]);
       
       // Refresh video list
       fetchVideos();
@@ -156,7 +177,7 @@ const Admin: React.FC = () => {
 
   const handleEdit = (video: Video) => {
     setEditingVideo(video);
-    setEditPromptText(video.promptText);
+    setEditPrompts(video.prompts && video.prompts.length > 0 ? video.prompts : [{ id: Date.now().toString(), text: video.promptText || '' }]);
   };
 
   const handleUpdate = async () => {
@@ -166,11 +187,13 @@ const Admin: React.FC = () => {
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch(`${API_BASE_URL}/api/videos/${editingVideo.id}`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ promptText: editPromptText })
+        body: JSON.stringify({
+          prompts: editPrompts
+        })
       });
       if (res.ok) {
         setEditingVideo(null);
@@ -295,23 +318,52 @@ const Admin: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="prompt" className="block text-sm font-medium text-zinc-400 mb-2">Detailed Prompt (Text & Images)</label>
-              <div className="rounded-xl overflow-hidden border border-white/10">
-                <JoditEditor
-                  ref={editor}
-                  value={promptText}
-                  config={editorConfig}
-                  onBlur={newContent => setPromptText(newContent)}
-                  onChange={() => {}}
-                />
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Video Prompts (Blocks)</label>
+              <div className="space-y-4">
+                {prompts.map((block) => (
+                  <div key={block.id} className="p-4 bg-zinc-800/50 border border-white/5 rounded-xl relative group">
+                    <button type="button" onClick={() => setPrompts(p => p.filter(b => b.id !== block.id))} className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 transition-colors z-10">
+                      <X size={16} />
+                    </button>
+                    <div className="flex flex-col md:flex-row gap-4 mt-2">
+                      <div className="w-full md:w-48 shrink-0 relative">
+                        {block.imageUrl ? (
+                          <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group/img">
+                            <img src={block.imageUrl} alt="Prompt visual" className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => setPrompts(p => p.map(b => b.id === block.id ? { ...b, imageUrl: undefined } : b))} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-red-400">
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                            <ImageIcon size={24} className="text-zinc-500 mb-2" />
+                            <span className="text-xs text-zinc-400">Add Image</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              if (e.target.files?.[0]) handleBlockImageUpload(e.target.files[0], block.id, false);
+                            }} />
+                          </label>
+                        )}
+                      </div>
+                      <textarea
+                        value={block.text || ''}
+                        onChange={e => setPrompts(p => p.map(b => b.id === block.id ? { ...b, text: e.target.value } : b))}
+                        className="flex-1 bg-zinc-900 border border-white/10 rounded-lg p-3 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500 min-h-[100px] resize-y"
+                        placeholder="Enter prompt text here..."
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
+              <button type="button" onClick={() => setPrompts(p => [...p, { id: Date.now().toString(), text: '' }])} className="mt-4 flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                <Plus size={16} /> Add another block
+              </button>
             </div>
 
             <button
               type="submit"
-              disabled={!file || !promptText || uploading}
+              disabled={!file || uploading}
               className={`w-full py-4 px-6 rounded-xl font-medium text-lg flex items-center justify-center gap-2 transition-all duration-300 ${
-                !file || !promptText || uploading
+                !file || uploading
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                   : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]'
               }`}
@@ -359,7 +411,12 @@ const Admin: React.FC = () => {
                         <img src={video.thumbnailUrl} alt="Thumbnail" className="w-24 h-16 object-cover rounded-md border border-white/10" />
                       </td>
                       <td className="px-6 py-4 font-mono text-xs line-clamp-3">
-                        <div dangerouslySetInnerHTML={{ __html: video.promptText.substring(0, 150) + '...' }} />
+                        <div>
+                          {video.prompts && video.prompts.length > 0 
+                            ? video.prompts.map(p => p.text).join(' ').substring(0, 150) + '...'
+                            : <div dangerouslySetInnerHTML={{ __html: (video.promptText || '').substring(0, 150) + '...' }} />
+                          }
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                         <button 
@@ -438,13 +495,46 @@ const Admin: React.FC = () => {
               </button>
             </div>
             
-            <div className="mb-6 rounded-xl overflow-hidden border border-white/10">
-              <JoditEditor
-                value={editPromptText}
-                config={editorConfig}
-                onBlur={newContent => setEditPromptText(newContent)}
-                onChange={() => {}}
-              />
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Video Prompts (Blocks)</label>
+              <div className="space-y-4">
+                {editPrompts.map((block) => (
+                  <div key={block.id} className="p-4 bg-zinc-800/50 border border-white/5 rounded-xl relative group">
+                    <button type="button" onClick={() => setEditPrompts(p => p.filter(b => b.id !== block.id))} className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 transition-colors z-10">
+                      <X size={16} />
+                    </button>
+                    <div className="flex flex-col md:flex-row gap-4 mt-2">
+                      <div className="w-full md:w-48 shrink-0 relative">
+                        {block.imageUrl ? (
+                          <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group/img">
+                            <img src={block.imageUrl} alt="Prompt visual" className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => setEditPrompts(p => p.map(b => b.id === block.id ? { ...b, imageUrl: undefined } : b))} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-red-400">
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                            <ImageIcon size={24} className="text-zinc-500 mb-2" />
+                            <span className="text-xs text-zinc-400">Add Image</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              if (e.target.files?.[0]) handleBlockImageUpload(e.target.files[0], block.id, true);
+                            }} />
+                          </label>
+                        )}
+                      </div>
+                      <textarea
+                        value={block.text || ''}
+                        onChange={e => setEditPrompts(p => p.map(b => b.id === block.id ? { ...b, text: e.target.value } : b))}
+                        className="flex-1 bg-zinc-900 border border-white/10 rounded-lg p-3 text-sm text-zinc-300 focus:outline-none focus:border-indigo-500 min-h-[100px] resize-y"
+                        placeholder="Enter prompt text here..."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={() => setEditPrompts(p => [...p, { id: Date.now().toString(), text: '' }])} className="mt-4 flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                <Plus size={16} /> Add another block
+              </button>
             </div>
             
             <div className="flex justify-end gap-4">
