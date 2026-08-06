@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2, X, Save } from 'lucide-react';
+import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2, X, Save, Info } from 'lucide-react';
 import type { Video } from '../types';
 import { auth } from '../firebase';
 import JoditEditor from 'jodit-react';
@@ -235,6 +235,20 @@ const Admin: React.FC = () => {
                   {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
                 </p>
               )}
+            </div>
+
+            {/* Guide Container */}
+            <div className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex flex-col gap-3">
+              <div className="flex items-center gap-3 text-blue-400 font-semibold text-lg">
+                <Info className="w-5 h-5" />
+                Hướng dẫn & Lưu ý khi viết Prompt
+              </div>
+              <ul className="list-disc list-outside space-y-2 text-sm text-blue-200/80 ml-6">
+                <li>Sử dụng thanh công cụ <b>Jodit Editor</b> bên dưới để định dạng văn bản (in đậm, in nghiêng, đổi màu).</li>
+                <li>Để <b>chèn ảnh</b> vào bài viết, hãy bấm vào icon hình bức ảnh trên thanh công cụ và tải ảnh từ máy lên (tự động upload).</li>
+                <li>Không nên chèn ảnh có dung lượng quá lớn (khuyến nghị dưới 2MB mỗi ảnh).</li>
+                <li>Sau khi đăng, bạn luôn có thể ấn nút Edit (Hình cây bút) ở bảng Quản lý Video bên dưới để chỉnh sửa lại nội dung này.</li>
+              </ul>
             </div>
 
             <div>
