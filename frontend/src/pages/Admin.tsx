@@ -12,6 +12,11 @@ const Admin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
+  // Edit state
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
+  const [editPromptText, setEditPromptText] = useState('');
+  const [updating, setUpdating] = useState(false);
+
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -130,24 +135,34 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleEdit = async (video: Video) => {
-    const newPrompt = window.prompt('Edit Prompt Text:', video.promptText);
-    if (newPrompt !== null && newPrompt !== video.promptText) {
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`${API_BASE_URL}/api/videos/${video.id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ promptText: newPrompt })
-        });
-        if (res.ok) fetchVideos();
-        else alert('Failed to edit video');
-      } catch (err) {
-        alert('Error editing video');
+  const handleEdit = (video: Video) => {
+    setEditingVideo(video);
+    setEditPromptText(video.promptText);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingVideo) return;
+    setUpdating(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/videos/${editingVideo.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ promptText: editPromptText })
+      });
+      if (res.ok) {
+        setEditingVideo(null);
+        fetchVideos();
+      } else {
+        alert('Failed to update video');
       }
+    } catch (err) {
+      alert('Error updating video');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -313,6 +328,46 @@ const Admin: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Video Modal */}
+      {editingVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Edit Video Prompt</h2>
+              <button onClick={() => setEditingVideo(null)} className="text-zinc-400 hover:text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-6 rounded-xl overflow-hidden border border-white/10">
+              <JoditEditor
+                value={editPromptText}
+                config={editorConfig}
+                onBlur={newContent => setEditPromptText(newContent)}
+                onChange={() => {}}
+              />
+            </div>
+            
+            <div className="flex justify-end gap-4">
+              <button 
+                onClick={() => setEditingVideo(null)}
+                className="px-6 py-2 rounded-xl text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleUpdate}
+                disabled={updating}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium flex items-center gap-2 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {updating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
