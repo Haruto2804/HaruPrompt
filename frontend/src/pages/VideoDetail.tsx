@@ -81,7 +81,7 @@ const VideoDetail: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Video Player Section */}
-          <div className="sticky top-24">
+          <div className="sticky top-24 z-50">
             <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl group">
               <video
                 src={video.videoUrl}
