@@ -149,6 +149,11 @@ app.get('/api/videos/:id', async (req, res) => {
   }
 });
 
+const clearVideoCache = () => {
+  videoCache = null;
+  lastCacheTime = 0;
+};
+
 // Upload route (Protected)
 app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, res) => {
   try {
@@ -202,6 +207,8 @@ app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, re
       prompts: parsedPrompts,
       createdAt: FieldValue.serverTimestamp(),
     });
+
+    clearVideoCache();
 
     res.json({
       success: true,
@@ -269,6 +276,8 @@ app.put('/api/videos/:id', authenticateAdmin, async (req, res) => {
 
     await db.collection('videos').doc(id).update(updateData);
 
+    clearVideoCache();
+
     res.json({ success: true, message: 'Video updated successfully' });
   } catch (error) {
     console.error('Update Error:', error);
@@ -310,6 +319,8 @@ app.delete('/api/videos/:id', authenticateAdmin, async (req, res) => {
     // 4. Delete from Firestore
     await docRef.delete();
     
+    clearVideoCache();
+    
     res.json({ success: true, message: 'Video deleted successfully' });
   } catch (error) {
     console.error('Delete Error:', error);
@@ -317,9 +328,24 @@ app.delete('/api/videos/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
+let settingsCache = null;
+let lastSettingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 30 * 60 * 1000; // 30 phút
+
+const clearSettingsCache = () => {
+  settingsCache = null;
+  lastSettingsCacheTime = 0;
+};
+
 // Get site settings
 app.get('/api/settings', async (req, res) => {
   try {
+    if (settingsCache && Date.now() - lastSettingsCacheTime < SETTINGS_CACHE_TTL) {
+      res.setHeader('X-Cache-Status', 'HIT');
+      return res.json(settingsCache);
+    }
+
+    res.setHeader('X-Cache-Status', 'MISS');
     const docRef = db.collection('settings').doc('general');
     const docSnap = await docRef.get();
     
@@ -327,7 +353,9 @@ app.get('/api/settings', async (req, res) => {
       return res.json({ aiGuideHtml: '', noticeHtml: '' });
     }
     
-    res.json(docSnap.data());
+    settingsCache = docSnap.data();
+    lastSettingsCacheTime = Date.now();
+    res.json(settingsCache);
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
@@ -345,6 +373,7 @@ app.put('/api/settings', authenticateAdmin, async (req, res) => {
       updatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
 
+    clearSettingsCache();
     res.json({ success: true, message: 'Settings updated successfully' });
   } catch (error) {
     console.error('Settings Update Error:', error);
