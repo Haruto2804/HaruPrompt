@@ -60,31 +60,53 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend is running!' });
 });
 
-// Get videos route
+// In-Memory Cache for Videos
+let videoCache = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+
+const getCachedVideos = async () => {
+  if (videoCache && Date.now() - lastCacheTime < CACHE_TTL) {
+    return videoCache;
+  }
+  
+  const snapshot = await db.collection('videos').orderBy('createdAt', 'desc').limit(1000).get();
+  videoCache = [];
+  snapshot.forEach((doc) => {
+    videoCache.push({ id: doc.id, ...doc.data() });
+  });
+  lastCacheTime = Date.now();
+  return videoCache;
+};
+
+// Get videos route (with Cache & Pagination)
 app.get('/api/videos', async (req, res) => {
   try {
-    const { search } = req.query;
-    const videosRef = db.collection('videos');
+    const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 1;
+    const limitCount = parseInt(req.query.limit) || 24;
     
-    // If search is provided, fetch more to filter in memory
-    const limitCount = search ? 200 : 50;
-    const snapshot = await videosRef.orderBy('createdAt', 'desc').limit(limitCount).get();
-    
-    let videos = [];
-    snapshot.forEach((doc) => {
-      videos.push({ id: doc.id, ...doc.data() });
-    });
+    let allVideos = await getCachedVideos();
     
     if (search) {
       const searchLower = search.toLowerCase();
-      videos = videos.filter(v => {
+      allVideos = allVideos.filter(v => {
         const textMatch = v.promptText && v.promptText.toLowerCase().includes(searchLower);
         const blockMatch = v.prompts && v.prompts.some(p => p.text && p.text.toLowerCase().includes(searchLower));
         return textMatch || blockMatch;
       });
     }
     
-    res.json(videos);
+    // Pagination
+    const startIndex = (page - 1) * limitCount;
+    const endIndex = page * limitCount;
+    const paginatedVideos = allVideos.slice(startIndex, endIndex);
+    
+    res.json({
+      videos: paginatedVideos,
+      hasMore: endIndex < allVideos.length,
+      total: allVideos.length
+    });
   } catch (error) {
     console.error('Error fetching videos:', error);
     res.status(500).json({ error: 'Failed to fetch videos' });
@@ -214,48 +236,6 @@ app.post('/api/upload-image', authenticateAdmin, upload.single('file'), async (r
   } catch (error) {
     console.error('Error in upload-image:', error);
     res.status(500).json({ error: 'Upload failed', details: error.message });
-  }
-});
-
-// Upload image route for Editor (Protected)
-app.post('/api/upload-image', authenticateAdmin, upload.single('files[0]'), async (req, res) => {
-  try {
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: 'No image uploaded' });
-    }
-
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-    cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret
-    });
-
-    const uploadToCloudinary = new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(file.buffer);
-    });
-
-    const cloudinaryResult = await uploadToCloudinary;
-    const imageUrl = cloudinaryResult.secure_url;
-
-    res.json({
-      success: true,
-      url: imageUrl
-    });
-  } catch (error) {
-    console.error('Image Upload Error:', error);
-    res.status(500).json({ error: 'Failed to upload image' });
   }
 });
 

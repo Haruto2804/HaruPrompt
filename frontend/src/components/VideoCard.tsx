@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Video } from '../types';
+import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
 interface VideoCardProps {
   video: Video;
@@ -34,7 +35,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
       onClick={() => navigate(`/video/${video.id}`)}
     >
       <img 
-        src={video.thumbnailUrl} 
+        src={optimizeCloudinaryUrl(video.thumbnailUrl)} 
         alt="Thumbnail" 
         className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isHovered ? 'opacity-0' : 'opacity-100'}`}
         loading="lazy"
@@ -42,7 +43,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
       
       <video
         ref={videoRef}
-        src={video.videoUrl}
+        src={optimizeCloudinaryUrl(video.videoUrl)}
         muted
         loop
         playsInline

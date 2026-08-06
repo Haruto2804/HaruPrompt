@@ -10,26 +10,48 @@ import { API_BASE_URL } from '../config';
 const Home: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
-  const fetchVideos = async (query = '') => {
-    setLoading(true);
+  const fetchVideos = async (query = '', pageNum = 1, isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
-      const url = query 
-        ? `${API_BASE_URL}/api/videos?search=${encodeURIComponent(query)}`
-        : `${API_BASE_URL}/api/videos`;
+      const searchParams = new URLSearchParams();
+      if (query) searchParams.append('search', query);
+      searchParams.append('page', pageNum.toString());
+      searchParams.append('limit', '24');
+      
+      const url = `${API_BASE_URL}/api/videos?${searchParams.toString()}`;
       const response = await fetch(url);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch videos from backend');
       }
 
-      const fetchedVideos = await response.json();
-      setVideos(fetchedVideos);
+      const data = await response.json();
+      const fetchedVideos = data.videos || [];
+      
+      if (isLoadMore) {
+        setVideos(prev => [...prev, ...fetchedVideos]);
+      } else {
+        setVideos(fetchedVideos);
+      }
+      
+      setHasMore(data.hasMore || false);
+      setPage(pageNum);
     } catch (error) {
       console.warn("Error fetching data.", error);
-      setVideos([]);
+      if (!isLoadMore) setVideos([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -39,7 +61,13 @@ const Home: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchVideos(searchQuery);
+    fetchVideos(searchQuery, 1, false);
+  };
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchVideos(searchQuery, page + 1, true);
+    }
   };
 
   return (
@@ -124,10 +152,31 @@ const Home: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {videos.map((video, index) => (
-              <VideoCard key={video.id || index} video={video} />
-            ))}
+          <div className="space-y-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {videos.map((video, index) => (
+                <VideoCard key={video.id || index} video={video} />
+              ))}
+            </div>
+            
+            {hasMore && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Đang tải...
+                    </>
+                  ) : (
+                    'Tải thêm Video'
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

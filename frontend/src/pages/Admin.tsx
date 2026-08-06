@@ -100,7 +100,7 @@ const Admin: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/api/videos`);
       if (res.ok) {
         const data = await res.json();
-        setVideos(data);
+        setVideos(data.videos || []);
       }
     } catch (err) {
       console.error('Failed to fetch videos', err);

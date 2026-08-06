@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { Video } from '../types';
 import { ArrowLeft, Loader2, Sparkles, AlertCircle, Copy, Check } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
 const VideoDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -84,8 +85,8 @@ const VideoDetail: React.FC = () => {
           <div className="sticky top-24 z-50">
             <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl group">
               <video
-                src={video.videoUrl}
-                poster={video.thumbnailUrl}
+                src={optimizeCloudinaryUrl(video.videoUrl)}
+                poster={optimizeCloudinaryUrl(video.thumbnailUrl)}
                 controls
                 autoPlay
                 loop
@@ -116,7 +117,7 @@ const VideoDetail: React.FC = () => {
                   <div key={block.id || index} className="bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col group transition-all hover:border-white/20">
                     {block.imageUrl && (
                       <div className="w-full relative bg-black/40">
-                        <img src={block.imageUrl} alt="Prompt visual" className="w-full h-auto max-h-[70vh] object-contain" />
+                        <img src={optimizeCloudinaryUrl(block.imageUrl)} alt="Prompt visual" className="w-full h-auto max-h-[70vh] object-contain" />
                         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-zinc-900/80 to-transparent"></div>
                       </div>
                     )}
