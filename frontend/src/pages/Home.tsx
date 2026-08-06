@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Video } from '../types';
 import VideoCard from '../components/VideoCard';
 import { Link } from 'react-router-dom';
-import { Sparkles, Loader2, Lightbulb } from 'lucide-react';
+import { Sparkles, Loader2, Lightbulb, Search } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 // Mock data removed as per user request
@@ -10,27 +10,37 @@ import { API_BASE_URL } from '../config';
 const Home: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchVideos = async (query = '') => {
+    setLoading(true);
+    try {
+      const url = query 
+        ? `${API_BASE_URL}/api/videos?search=${encodeURIComponent(query)}`
+        : `${API_BASE_URL}/api/videos`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch videos from backend');
+      }
+
+      const fetchedVideos = await response.json();
+      setVideos(fetchedVideos);
+    } catch (error) {
+      console.warn("Error fetching data.", error);
+      setVideos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        // Fetch from backend API
-        const response = await fetch(`${API_BASE_URL}/api/videos`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch videos from backend');
-        }
-
-        const fetchedVideos = await response.json();
-        setVideos(fetchedVideos);
-      } catch (error) {
-        console.warn("Error fetching data.", error);
-        setVideos([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchVideos();
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchVideos(searchQuery);
+  };
 
   return (
     <div className="min-h-screen flex flex-col pt-8 pb-20 relative overflow-hidden">
@@ -57,7 +67,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* Link to Free AI Guide Page */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-12">
           <Link 
             to="/guide"
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-medium transition-all hover:scale-105"
@@ -65,6 +75,31 @@ const Home: React.FC = () => {
             <Lightbulb className="w-5 h-5 text-yellow-400" />
             Xem Hướng dẫn & Lưu ý tạo Video AI
           </Link>
+        </div>
+
+        {/* Search Bar */}
+        <div className="max-w-2xl mx-auto mb-12 relative z-20">
+          <form onSubmit={handleSearch} className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300 opacity-50 group-hover:opacity-100"></div>
+            <div className="relative bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex items-center shadow-2xl">
+              <div className="pl-4 pr-3 text-zinc-400">
+                <Search size={20} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm kiếm prompt (ví dụ: cinematic, neon, cat...)"
+                className="flex-1 bg-transparent border-none text-white focus:outline-none focus:ring-0 placeholder-zinc-500 text-base py-3"
+              />
+              <button
+                type="submit"
+                className="ml-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors border border-white/5"
+              >
+                Tìm Kiếm
+              </button>
+            </div>
+          </form>
         </div>
 
         {loading ? (

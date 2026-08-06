@@ -51,13 +51,24 @@ app.get('/api/health', (req, res) => {
 // Get videos route
 app.get('/api/videos', async (req, res) => {
   try {
+    const { search } = req.query;
     const videosRef = db.collection('videos');
-    const snapshot = await videosRef.orderBy('createdAt', 'desc').limit(20).get();
     
-    const videos = [];
+    // If search is provided, fetch more to filter in memory
+    const limitCount = search ? 200 : 50;
+    const snapshot = await videosRef.orderBy('createdAt', 'desc').limit(limitCount).get();
+    
+    let videos = [];
     snapshot.forEach((doc) => {
       videos.push({ id: doc.id, ...doc.data() });
     });
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      videos = videos.filter(v => 
+        v.promptText && v.promptText.toLowerCase().includes(searchLower)
+      );
+    }
     
     res.json(videos);
   } catch (error) {
