@@ -113,11 +113,11 @@ const VideoDetail: React.FC = () => {
             <div className="space-y-6">
               {video.prompts && video.prompts.length > 0 ? (
                 video.prompts.map((block, index) => (
-                  <div key={block.id || index} className="bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row group transition-all hover:border-white/20">
+                  <div key={block.id || index} className="bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col group transition-all hover:border-white/20">
                     {block.imageUrl && (
-                      <div className="w-full md:w-1/3 aspect-video md:aspect-auto relative shrink-0">
-                        <img src={block.imageUrl} alt="Prompt visual" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-zinc-900/80 to-transparent"></div>
+                      <div className="w-full relative bg-black/40">
+                        <img src={block.imageUrl} alt="Prompt visual" className="w-full h-auto max-h-[70vh] object-contain" />
+                        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-zinc-900/80 to-transparent"></div>
                       </div>
                     )}
                     <div className="p-6 sm:p-8 flex-1 flex flex-col relative">

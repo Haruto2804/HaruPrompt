@@ -325,17 +325,17 @@ const Admin: React.FC = () => {
                     <button type="button" onClick={() => setPrompts(p => p.filter(b => b.id !== block.id))} className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 transition-colors z-10">
                       <X size={16} />
                     </button>
-                    <div className="flex flex-col md:flex-row gap-4 mt-2">
-                      <div className="w-full md:w-48 shrink-0 relative">
+                    <div className="flex flex-col gap-4 mt-2">
+                      <div className="w-full relative bg-black/20 rounded-lg overflow-hidden border border-white/10">
                         {block.imageUrl ? (
-                          <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group/img">
-                            <img src={block.imageUrl} alt="Prompt visual" className="w-full h-full object-cover" />
+                          <div className="relative group/img flex justify-center">
+                            <img src={block.imageUrl} alt="Prompt visual" className="w-full h-auto max-h-64 object-contain" />
                             <button type="button" onClick={() => setPrompts(p => p.map(b => b.id === block.id ? { ...b, imageUrl: undefined } : b))} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-red-400">
                               <Trash2 size={20} />
                             </button>
                           </div>
                         ) : (
-                          <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                          <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
                             <ImageIcon size={24} className="text-zinc-500 mb-2" />
                             <span className="text-xs text-zinc-400">Add Image</span>
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => {
@@ -503,17 +503,17 @@ const Admin: React.FC = () => {
                     <button type="button" onClick={() => setEditPrompts(p => p.filter(b => b.id !== block.id))} className="absolute top-2 right-2 p-1 text-zinc-500 hover:text-red-400 transition-colors z-10">
                       <X size={16} />
                     </button>
-                    <div className="flex flex-col md:flex-row gap-4 mt-2">
-                      <div className="w-full md:w-48 shrink-0 relative">
+                    <div className="flex flex-col gap-4 mt-2">
+                      <div className="w-full relative bg-black/20 rounded-lg overflow-hidden border border-white/10">
                         {block.imageUrl ? (
-                          <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 group/img">
-                            <img src={block.imageUrl} alt="Prompt visual" className="w-full h-full object-cover" />
+                          <div className="relative group/img flex justify-center">
+                            <img src={block.imageUrl} alt="Prompt visual" className="w-full h-auto max-h-64 object-contain" />
                             <button type="button" onClick={() => setEditPrompts(p => p.map(b => b.id === block.id ? { ...b, imageUrl: undefined } : b))} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity text-red-400">
                               <Trash2 size={20} />
                             </button>
                           </div>
                         ) : (
-                          <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                          <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
                             <ImageIcon size={24} className="text-zinc-500 mb-2" />
                             <span className="text-xs text-zinc-400">Add Image</span>
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => {
