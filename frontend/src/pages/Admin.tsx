@@ -3,6 +3,7 @@ import { Upload, Loader2, AlertCircle, CheckCircle2, Edit2, Trash2 } from 'lucid
 import type { Video } from '../types';
 import { auth } from '../firebase';
 import JoditEditor from 'jodit-react';
+import { API_BASE_URL } from '../config';
 
 const Admin: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -33,7 +34,7 @@ const Admin: React.FC = () => {
     height: 400,
     uploader: {
       insertImageAsBase64URI: false,
-      url: 'http://localhost:5000/api/upload-image',
+      url: `${API_BASE_URL}/api/upload-image`,
       headers: authToken ? {
         'Authorization': `Bearer ${authToken}`
       } : {},
@@ -65,7 +66,7 @@ const Admin: React.FC = () => {
 
   const fetchVideos = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/videos');
+      const res = await fetch(`${API_BASE_URL}/api/videos`);
       if (res.ok) {
         const data = await res.json();
         setVideos(data);
@@ -102,7 +103,7 @@ const Admin: React.FC = () => {
       formData.append('file', file);
       formData.append('promptText', promptText);
 
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -134,7 +135,7 @@ const Admin: React.FC = () => {
     if (newPrompt !== null && newPrompt !== video.promptText) {
       try {
         const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`http://localhost:5000/api/videos/${video.id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/videos/${video.id}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ const Admin: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this video? This will also remove it from Cloudinary.')) {
       try {
         const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`http://localhost:5000/api/videos/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/videos/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

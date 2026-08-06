@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Video } from '../types';
 import VideoCard from '../components/VideoCard';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 // Mock data removed as per user request
 
@@ -13,7 +14,7 @@ const Home: React.FC = () => {
     const fetchVideos = async () => {
       try {
         // Fetch from backend API
-        const response = await fetch('http://localhost:5000/api/videos');
+        const response = await fetch(`${API_BASE_URL}/api/videos`);
         if (!response.ok) {
           throw new Error('Failed to fetch videos from backend');
         }

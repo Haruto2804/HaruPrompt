@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Video } from '../types';
 import { ArrowLeft, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 const VideoDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,7 +14,7 @@ const VideoDetail: React.FC = () => {
   useEffect(() => {
     const fetchVideo = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/videos/${id}`);
+        const response = await fetch(`${API_BASE_URL}/api/videos/${id}`);
         if (!response.ok) {
           throw new Error('Video not found');
         }
