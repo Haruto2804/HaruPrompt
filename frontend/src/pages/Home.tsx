@@ -103,8 +103,15 @@ const Home: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="animate-spin text-zinc-500" size={32} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <div 
+                key={index} 
+                className="aspect-[4/5] rounded-2xl bg-zinc-800/50 animate-pulse border border-white/5 flex items-center justify-center relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+              </div>
+            ))}
           </div>
         ) : videos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">

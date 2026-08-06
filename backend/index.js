@@ -10,9 +10,21 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const rateLimit = require('express-rate-limit');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Rate Limiting (Bảo vệ API khỏi spam/DDoS)
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 phút
+  max: 100, // Tối đa 100 requests / 1 phút / 1 IP
+  message: { error: 'Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 1 phút.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 
 // Auth Middleware
 const authenticateAdmin = async (req, res, next) => {
