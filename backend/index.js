@@ -67,16 +67,18 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 phút
 
 const getCachedVideos = async () => {
   if (videoCache && Date.now() - lastCacheTime < CACHE_TTL) {
-    return videoCache;
+    console.log('[CACHE HIT] Trả dữ liệu từ RAM siêu tốc!');
+    return { data: videoCache, cached: true };
   }
   
+  console.log('[CACHE MISS] Truy vấn Firestore (chỉ chạy 1 lần mỗi 5 phút)...');
   const snapshot = await db.collection('videos').orderBy('createdAt', 'desc').limit(1000).get();
   videoCache = [];
   snapshot.forEach((doc) => {
     videoCache.push({ id: doc.id, ...doc.data() });
   });
   lastCacheTime = Date.now();
-  return videoCache;
+  return { data: videoCache, cached: false };
 };
 
 // Get videos route (with Cache & Pagination)
@@ -86,7 +88,11 @@ app.get('/api/videos', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limitCount = parseInt(req.query.limit) || 24;
     
-    let allVideos = await getCachedVideos();
+    const cacheResult = await getCachedVideos();
+    let allVideos = cacheResult.data;
+    
+    // Gắn thêm Header để Frontend biết là có dùng Cache hay không
+    res.setHeader('X-Cache-Status', cacheResult.cached ? 'HIT' : 'MISS');
     
     if (search) {
       const searchLower = search.toLowerCase();
