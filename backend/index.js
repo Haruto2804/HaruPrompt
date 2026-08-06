@@ -8,6 +8,7 @@ const { db, FieldValue, auth } = require('./firebase');
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // Cần thiết khi deploy lên Render/Vercel để nhận diện đúng IP người dùng
 const PORT = process.env.PORT || 5000;
 
 const rateLimit = require('express-rate-limit');
