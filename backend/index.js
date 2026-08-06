@@ -123,6 +123,18 @@ app.get('/api/videos', async (req, res) => {
 app.get('/api/videos/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Thử lấy từ Cache trước
+    const cacheResult = await getCachedVideos();
+    const cachedVideo = cacheResult.data.find(v => v.id === id);
+    
+    if (cachedVideo) {
+      res.setHeader('X-Cache-Status', 'HIT');
+      return res.json(cachedVideo);
+    }
+
+    // Nếu không có trong cache thì mới gọi Firebase (Fallback)
+    res.setHeader('X-Cache-Status', 'MISS');
     const docRef = db.collection('videos').doc(id);
     const docSnap = await docRef.get();
     
