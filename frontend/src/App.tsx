@@ -8,6 +8,7 @@ import Guide from './pages/Guide';
 import { ModalProvider } from './context/ModalContext';
 import LoginOverlay from './components/LoginOverlay';
 import DonateWidget from './components/DonateWidget';
+import Footer from './components/Footer';
 import { auth } from './firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
@@ -84,6 +85,7 @@ function App() {
             <Route path="/video/:id" element={<VideoDetail />} />
             <Route path="/guide" element={<Guide />} />
           </Routes>
+          <Footer />
           <DonateWidget />
         </div>
       </ModalProvider>
