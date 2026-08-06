@@ -18,9 +18,9 @@ const DonateWidget: React.FC = () => {
   }, [isOpen]);
 
   const bankInfo = {
-    bankName: "Tên Ngân Hàng",
-    accountNumber: "0123456789",
-    accountName: "NGUYEN VAN A"
+    bankName: "Vietcombank",
+    accountNumber: "1041230020",
+    accountName: "NGO LUU GIA BAO"
   };
 
   const handleCopy = () => {
@@ -75,15 +75,11 @@ const DonateWidget: React.FC = () => {
 
             {/* QR Code Area */}
             <div className="px-8 pb-4">
-              <div className="bg-white p-3 rounded-2xl mx-auto w-48 h-48 mb-6 shadow-inner relative group">
+              <div className="bg-white p-2 rounded-2xl mx-auto w-56 h-56 mb-6 shadow-inner relative group">
                 <img 
-                  src="/qr-code.png" 
+                  src={`https://img.vietqr.io/image/vcb-${bankInfo.accountNumber}-compact2.png?accountName=${encodeURIComponent(bankInfo.accountName)}`}
                   alt="QR Code Donate" 
                   className="w-full h-full object-contain rounded-xl"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://via.placeholder.com/200?text=Thay+qr-code.png+vao+thu+muc+public';
-                  }}
                 />
               </div>
 
