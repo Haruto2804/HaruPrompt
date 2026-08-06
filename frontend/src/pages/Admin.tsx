@@ -21,6 +21,11 @@ const Admin: React.FC = () => {
   const [loadingVideos, setLoadingVideos] = useState(true);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
+  // Settings state
+  const [aiGuideHtml, setAiGuideHtml] = useState('');
+  const [noticeHtml, setNoticeHtml] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+
   useEffect(() => {
     // Get initial token for the Jodit editor uploads
     const fetchToken = async () => {
@@ -83,8 +88,22 @@ const Admin: React.FC = () => {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.aiGuideHtml) setAiGuideHtml(data.aiGuideHtml);
+        if (data.noticeHtml) setNoticeHtml(data.noticeHtml);
+      }
+    } catch (err) {
+      console.error('Failed to fetch settings', err);
+    }
+  };
+
   useEffect(() => {
     fetchVideos();
+    fetchSettings();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,6 +182,30 @@ const Admin: React.FC = () => {
       alert('Error updating video');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`${API_BASE_URL}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ aiGuideHtml, noticeHtml })
+      });
+      if (res.ok) {
+        alert('Settings saved successfully!');
+      } else {
+        alert('Failed to save settings');
+      }
+    } catch (err) {
+      alert('Error saving settings');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -340,6 +383,47 @@ const Admin: React.FC = () => {
               </table>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Site Content Management Section */}
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-6">Manage Site Content</h2>
+        <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Free AI Guide Content</label>
+            <div className="rounded-xl overflow-hidden border border-white/10">
+              <JoditEditor
+                value={aiGuideHtml}
+                config={editorConfig}
+                onBlur={newContent => setAiGuideHtml(newContent)}
+                onChange={() => {}}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Important Notice Content</label>
+            <div className="rounded-xl overflow-hidden border border-white/10">
+              <JoditEditor
+                value={noticeHtml}
+                config={editorConfig}
+                onBlur={newContent => setNoticeHtml(newContent)}
+                onChange={() => {}}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button 
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-medium flex items-center gap-2 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {savingSettings ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              Save Content
+            </button>
+          </div>
         </div>
       </div>
 

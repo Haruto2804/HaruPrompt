@@ -10,6 +10,8 @@ const Home: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
+  const [aiGuideHtml, setAiGuideHtml] = useState<string | null>(null);
+  const [noticeHtml, setNoticeHtml] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -30,7 +32,21 @@ const Home: React.FC = () => {
       }
     };
 
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.aiGuideHtml) setAiGuideHtml(data.aiGuideHtml);
+          if (data.noticeHtml) setNoticeHtml(data.noticeHtml);
+        }
+      } catch (err) {
+        console.error('Failed to fetch settings', err);
+      }
+    };
+
     fetchVideos();
+    fetchSettings();
   }, []);
 
   return (
@@ -81,20 +97,24 @@ const Home: React.FC = () => {
                     <Lightbulb className="w-5 h-5 text-yellow-400" />
                     Cách Dùng AI Miễn Phí
                   </h3>
-                  <ul className="space-y-4 text-zinc-300 text-sm leading-relaxed">
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">1</span>
-                      <p>Truy cập vào các nền tảng AI tạo video miễn phí như <b>Haiper</b>, <b>Luma Dream Machine</b>, hoặc <b>Kling AI</b>.</p>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">2</span>
-                      <p>Bấm vào một video bất kỳ bên dưới, copy phần <b>Prompt (Câu lệnh)</b> mà chúng tôi đã cung cấp sẵn.</p>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">3</span>
-                      <p>Dán Prompt đó vào công cụ AI, tinh chỉnh lại một số từ khóa theo ý thích và bấm Generate!</p>
-                    </li>
-                  </ul>
+                  {aiGuideHtml ? (
+                    <div className="text-zinc-300 text-sm leading-relaxed max-w-none [&>p]:mb-4 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4" dangerouslySetInnerHTML={{ __html: aiGuideHtml }} />
+                  ) : (
+                    <ul className="space-y-4 text-zinc-300 text-sm leading-relaxed">
+                      <li className="flex gap-3">
+                        <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">1</span>
+                        <p>Truy cập vào các nền tảng AI tạo video miễn phí như <b>Haiper</b>, <b>Luma Dream Machine</b>, hoặc <b>Kling AI</b>.</p>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">2</span>
+                        <p>Bấm vào một video bất kỳ bên dưới, copy phần <b>Prompt (Câu lệnh)</b> mà chúng tôi đã cung cấp sẵn.</p>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-medium text-xs mt-0.5">3</span>
+                        <p>Dán Prompt đó vào công cụ AI, tinh chỉnh lại một số từ khóa theo ý thích và bấm Generate!</p>
+                      </li>
+                    </ul>
+                  )}
                 </div>
 
                 {/* Notice */}
@@ -103,14 +123,18 @@ const Home: React.FC = () => {
                     <AlertTriangle className="w-5 h-5 text-pink-400" />
                     Lưu Ý Quan Trọng
                   </h3>
-                  <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-6 text-sm text-pink-200/90 leading-relaxed shadow-inner">
-                    <p className="mb-3">
-                      🚀 <b>Chất lượng video</b> phụ thuộc rất nhiều vào công cụ AI bạn đang dùng. Prompt (Câu lệnh) chỉ đóng vai trò hướng dẫn nội dung cho AI.
-                    </p>
-                    <p>
-                      ⚠️ Các công cụ AI miễn phí thường có <b>giới hạn số lần tạo</b> mỗi ngày. Hãy tận dụng tối đa những bộ Prompt được tối ưu sẵn ở đây để đỡ tốn lượt generate hỏng nhé!
-                    </p>
-                  </div>
+                  {noticeHtml ? (
+                    <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-6 text-sm text-pink-200/90 leading-relaxed shadow-inner max-w-none [&>p]:mb-4 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4" dangerouslySetInnerHTML={{ __html: noticeHtml }} />
+                  ) : (
+                    <div className="bg-pink-500/10 border border-pink-500/20 rounded-2xl p-6 text-sm text-pink-200/90 leading-relaxed shadow-inner">
+                      <p className="mb-3">
+                        🚀 <b>Chất lượng video</b> phụ thuộc rất nhiều vào công cụ AI bạn đang dùng. Prompt (Câu lệnh) chỉ đóng vai trò hướng dẫn nội dung cho AI.
+                      </p>
+                      <p>
+                        ⚠️ Các công cụ AI miễn phí thường có <b>giới hạn số lần tạo</b> mỗi ngày. Hãy tận dụng tối đa những bộ Prompt được tối ưu sẵn ở đây để đỡ tốn lượt generate hỏng nhé!
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

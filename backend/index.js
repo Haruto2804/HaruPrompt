@@ -250,6 +250,41 @@ app.delete('/api/videos/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Get site settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    const docRef = db.collection('settings').doc('general');
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      return res.json({ aiGuideHtml: '', noticeHtml: '' });
+    }
+    
+    res.json(docSnap.data());
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Update site settings (Protected)
+app.put('/api/settings', authenticateAdmin, async (req, res) => {
+  try {
+    const { aiGuideHtml, noticeHtml } = req.body;
+    
+    await db.collection('settings').doc('general').set({
+      aiGuideHtml: aiGuideHtml || '',
+      noticeHtml: noticeHtml || '',
+      updatedAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    res.json({ success: true, message: 'Settings updated successfully' });
+  } catch (error) {
+    console.error('Settings Update Error:', error);
+    res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
