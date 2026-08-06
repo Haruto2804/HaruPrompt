@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
 import VideoDetail from './pages/VideoDetail';
+import Guide from './pages/Guide';
 import { ModalProvider } from './context/ModalContext';
 import LoginOverlay from './components/LoginOverlay';
 import DonateWidget from './components/DonateWidget';
@@ -81,6 +82,7 @@ function App() {
               } 
             />
             <Route path="/video/:id" element={<VideoDetail />} />
+            <Route path="/guide" element={<Guide />} />
           </Routes>
           <DonateWidget />
         </div>
