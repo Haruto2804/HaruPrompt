@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Video } from '../types';
 import VideoCard from '../components/VideoCard';
 import { Link } from 'react-router-dom';
-import { Sparkles, Loader2, Lightbulb, AlertTriangle } from 'lucide-react';
+import { Sparkles, Loader2, Lightbulb } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 // Mock data removed as per user request
@@ -28,6 +28,7 @@ const Home: React.FC = () => {
       } finally {
         setLoading(false);
       }
+    };
     fetchVideos();
   }, []);
 
