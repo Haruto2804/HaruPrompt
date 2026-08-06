@@ -90,11 +90,11 @@ const Home: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm prompt (ví dụ: cinematic, neon, cat...)"
-                className="flex-1 bg-transparent border-none text-white focus:outline-none focus:ring-0 placeholder-zinc-500 text-base py-3"
+                className="flex-1 min-w-0 bg-transparent border-none text-white focus:outline-none focus:ring-0 placeholder-zinc-500 text-sm sm:text-base py-2.5 sm:py-3"
               />
               <button
                 type="submit"
-                className="ml-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors border border-white/5"
+                className="ml-1 sm:ml-2 shrink-0 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-colors border border-white/5"
               >
                 Tìm Kiếm
               </button>
