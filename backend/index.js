@@ -158,7 +158,7 @@ const clearVideoCache = () => {
 // Upload route (Protected)
 app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, res) => {
   try {
-    const { promptText, prompts } = req.body;
+    const { promptText, prompts, customThumbnailUrl } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -198,7 +198,7 @@ app.post('/api/upload', authenticateAdmin, upload.single('file'), async (req, re
 
     const cloudinaryResult = await uploadToCloudinary;
     const videoUrl = cloudinaryResult.secure_url;
-    const thumbnailUrl = videoUrl.replace(/\.[^/.]+$/, ".jpg");
+    const thumbnailUrl = customThumbnailUrl || videoUrl.replace(/\.[^/.]+$/, ".jpg");
 
     // Save to Firebase Database using Admin SDK
     await db.collection('videos').add({
@@ -269,11 +269,12 @@ app.post('/api/upload-image', authenticateAdmin, upload.single('file'), async (r
 app.put('/api/videos/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { promptText, prompts } = req.body;
+    const { promptText, prompts, thumbnailUrl } = req.body;
 
     const updateData = { updatedAt: FieldValue.serverTimestamp() };
     if (promptText !== undefined) updateData.promptText = promptText;
     if (prompts !== undefined) updateData.prompts = prompts;
+    if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
 
     await db.collection('videos').doc(id).update(updateData);
 

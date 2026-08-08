@@ -11,10 +11,12 @@ const Admin: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   
   // Edit state
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [editPrompts, setEditPrompts] = useState<PromptBlock[]>([]);
+  const [editThumbnailFile, setEditThumbnailFile] = useState<File | null>(null);
   const [updating, setUpdating] = useState(false);
 
   const [videos, setVideos] = useState<Video[]>([]);
@@ -144,9 +146,27 @@ const Admin: React.FC = () => {
     try {
       const token = await auth.currentUser?.getIdToken();
       
+      let customThumbnailUrl = '';
+      if (thumbnailFile) {
+        const thumbFormData = new FormData();
+        thumbFormData.append('file', thumbnailFile);
+        const thumbRes = await fetch(`${API_BASE_URL}/api/upload-image`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: thumbFormData,
+        });
+        const thumbData = await thumbRes.json();
+        if (thumbData.url) {
+          customThumbnailUrl = thumbData.url;
+        }
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('prompts', JSON.stringify(prompts));
+      if (customThumbnailUrl) {
+        formData.append('customThumbnailUrl', customThumbnailUrl);
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
@@ -164,6 +184,7 @@ const Admin: React.FC = () => {
 
       setSuccess(true);
       setFile(null);
+      setThumbnailFile(null);
       setPrompts([{ id: Date.now().toString(), text: '' }]);
       
       // Refresh video list
@@ -185,6 +206,26 @@ const Admin: React.FC = () => {
     setUpdating(true);
     try {
       const token = await auth.currentUser?.getIdToken();
+
+      let newThumbnailUrl = editingVideo.thumbnailUrl;
+      if (editThumbnailFile) {
+        const thumbFormData = new FormData();
+        thumbFormData.append('file', editThumbnailFile);
+        const thumbRes = await fetch(`${API_BASE_URL}/api/upload-image`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: thumbFormData,
+        });
+        const thumbData = await thumbRes.json();
+        if (thumbData.url) {
+          newThumbnailUrl = thumbData.url;
+        } else {
+          alert('Upload thumbnail failed: ' + JSON.stringify(thumbData));
+          setUpdating(false);
+          return;
+        }
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/videos/${editingVideo.id}`, {
         method: 'PUT',
         headers: {
@@ -192,17 +233,20 @@ const Admin: React.FC = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          prompts: editPrompts
+          prompts: editPrompts,
+          thumbnailUrl: newThumbnailUrl
         })
       });
       if (res.ok) {
         setEditingVideo(null);
+        setEditThumbnailFile(null);
         fetchVideos();
       } else {
-        alert('Failed to update video');
+        const errData = await res.json().catch(() => ({}));
+        alert('Failed to update video: ' + JSON.stringify(errData));
       }
     } catch (err) {
-      alert('Error updating video');
+      alert('Error updating video: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setUpdating(false);
     }
@@ -299,6 +343,23 @@ const Admin: React.FC = () => {
                 <p className="mt-3 text-sm text-zinc-300 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-400" />
                   {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Custom Thumbnail (Optional)</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) setThumbnailFile(e.target.files[0]);
+                }}
+                className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 transition-colors"
+              />
+              {thumbnailFile && (
+                <p className="mt-2 text-sm text-green-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-4 h-4" /> Selected: {thumbnailFile.name}
                 </p>
               )}
             </div>
@@ -490,12 +551,28 @@ const Admin: React.FC = () => {
           <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">Edit Video Prompt</h2>
-              <button onClick={() => setEditingVideo(null)} className="text-zinc-400 hover:text-white transition-colors">
+              <button onClick={() => { setEditingVideo(null); setEditThumbnailFile(null); }} className="text-zinc-400 hover:text-white transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
             
             <div className="mb-6">
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Current Thumbnail</label>
+              {editingVideo.thumbnailUrl && <img src={editingVideo.thumbnailUrl} alt="Thumbnail" className="w-32 h-auto rounded-lg mb-4 border border-white/10" />}
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Update Thumbnail (Optional)</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) setEditThumbnailFile(e.target.files[0]);
+                }}
+                className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 transition-colors mb-4"
+              />
+              {editThumbnailFile && (
+                <p className="text-sm text-green-400 flex items-center gap-1 mb-4">
+                  <CheckCircle2 className="w-4 h-4" /> Selected: {editThumbnailFile.name}
+                </p>
+              )}
               <label className="block text-sm font-medium text-zinc-400 mb-2">Video Prompts (Blocks)</label>
               <div className="space-y-4">
                 {editPrompts.map((block) => (
@@ -539,7 +616,7 @@ const Admin: React.FC = () => {
             
             <div className="flex justify-end gap-4">
               <button 
-                onClick={() => setEditingVideo(null)}
+                onClick={() => { setEditingVideo(null); setEditThumbnailFile(null); }}
                 className="px-6 py-2 rounded-xl text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
               >
                 Cancel
