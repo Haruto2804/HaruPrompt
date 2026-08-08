@@ -4,6 +4,8 @@ import VideoCard from '../components/VideoCard';
 import { Link } from 'react-router-dom';
 import { Sparkles, Loader2, Lightbulb, Search } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import { useInView } from 'react-intersection-observer';
+import { motion } from 'framer-motion';
 
 // Mock data removed as per user request
 
@@ -14,8 +16,9 @@ const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const { ref, inView } = useInView({ threshold: 0.1 });
 
-  const fetchVideos = async (query = '', pageNum = 1, isLoadMore = false) => {
+  const fetchVideos = async (query = '', pageNum = 1, isLoadMore = false, lastId = null) => {
     if (isLoadMore) {
       setLoadingMore(true);
     } else {
@@ -27,6 +30,7 @@ const Home: React.FC = () => {
       if (query) searchParams.append('search', query);
       searchParams.append('page', pageNum.toString());
       searchParams.append('limit', '24');
+      if (lastId) searchParams.append('lastDocId', lastId);
       
       const url = `${API_BASE_URL}/api/videos?${searchParams.toString()}`;
       const response = await fetch(url);
@@ -65,13 +69,26 @@ const Home: React.FC = () => {
   };
 
   const loadMore = () => {
-    if (!loadingMore && hasMore) {
-      fetchVideos(searchQuery, page + 1, true);
+    if (!loadingMore && hasMore && videos.length > 0) {
+      const lastId = videos[videos.length - 1].id;
+      fetchVideos(searchQuery, page + 1, true, lastId);
     }
   };
 
+  useEffect(() => {
+    if (inView) {
+      loadMore();
+    }
+  }, [inView]);
+
   return (
-    <div className="min-h-screen flex flex-col pt-8 pb-20 relative overflow-hidden">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen flex flex-col pt-8 pb-20 relative overflow-hidden"
+    >
       {/* Background Animated Blobs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[500px] pointer-events-none opacity-40 mix-blend-screen blur-3xl z-0">
         <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-600/30 rounded-full animate-blob"></div>
@@ -160,27 +177,21 @@ const Home: React.FC = () => {
             </div>
             
             {hasMore && (
-              <div className="flex justify-center pt-4">
-                <button
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 shadow-lg"
-                >
-                  {loadingMore ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Đang tải...
-                    </>
-                  ) : (
-                    'Tải thêm Video'
-                  )}
-                </button>
+              <div ref={ref} className="flex justify-center pt-10 pb-10">
+                {loadingMore ? (
+                  <div className="flex items-center gap-2 text-indigo-400 font-medium">
+                    <Loader2 size={24} className="animate-spin" />
+                    Đang tải thêm...
+                  </div>
+                ) : (
+                  <div className="h-10"></div> // Spacer to ensure observer triggers
+                )}
               </div>
             )}
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

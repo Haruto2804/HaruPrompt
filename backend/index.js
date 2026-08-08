@@ -82,38 +82,62 @@ const getCachedVideos = async () => {
   return { data: videoCache, cached: false };
 };
 
-// Get videos route (with Cache & Pagination)
+// Get videos route (with Native Pagination & Lazy Search Cache)
 app.get('/api/videos', async (req, res) => {
   try {
     const search = req.query.search || '';
-    const page = parseInt(req.query.page) || 1;
     const limitCount = parseInt(req.query.limit) || 24;
+    const lastDocId = req.query.lastDocId || null;
     
-    const cacheResult = await getCachedVideos();
-    let allVideos = cacheResult.data;
-    
-    // Gắn thêm Header để Frontend biết là có dùng Cache hay không
-    res.setHeader('X-Cache-Status', cacheResult.cached ? 'HIT' : 'MISS');
-    
+    // Nếu CÓ SEARCH -> Dùng Cache in-memory (Option 1)
     if (search) {
+      const cacheResult = await getCachedVideos();
+      let allVideos = cacheResult.data;
+      res.setHeader('X-Cache-Status', cacheResult.cached ? 'HIT' : 'MISS');
+      
       const searchLower = search.toLowerCase();
       allVideos = allVideos.filter(v => {
         const textMatch = v.promptText && v.promptText.toLowerCase().includes(searchLower);
         const blockMatch = v.prompts && v.prompts.some(p => p.text && p.text.toLowerCase().includes(searchLower));
         return textMatch || blockMatch;
       });
+      
+      // Pagination giả trên RAM cho Search
+      const page = parseInt(req.query.page) || 1;
+      const startIndex = (page - 1) * limitCount;
+      const endIndex = page * limitCount;
+      const paginatedVideos = allVideos.slice(startIndex, endIndex);
+      
+      return res.json({
+        videos: paginatedVideos,
+        hasMore: endIndex < allVideos.length,
+        total: allVideos.length
+      });
+    }
+
+    // Nếu KHÔNG SEARCH -> Dùng Phân trang gốc của Firestore (Tiết kiệm Read, Không lo tràn RAM)
+    res.setHeader('X-Cache-Status', 'BYPASS');
+    let query = db.collection('videos').orderBy('createdAt', 'desc');
+    
+    if (lastDocId) {
+      const lastDocSnap = await db.collection('videos').doc(lastDocId).get();
+      if (lastDocSnap.exists) {
+        query = query.startAfter(lastDocSnap);
+      }
     }
     
-    // Pagination
-    const startIndex = (page - 1) * limitCount;
-    const endIndex = page * limitCount;
-    const paginatedVideos = allVideos.slice(startIndex, endIndex);
+    const snapshot = await query.limit(limitCount).get();
+    const videos = [];
+    snapshot.forEach(doc => {
+      videos.push({ id: doc.id, ...doc.data() });
+    });
     
     res.json({
-      videos: paginatedVideos,
-      hasMore: endIndex < allVideos.length,
-      total: allVideos.length
+      videos,
+      hasMore: videos.length === limitCount,
+      total: null // Cannot get exact total easily with pagination
     });
+    
   } catch (error) {
     console.error('Error fetching videos:', error);
     res.status(500).json({ error: 'Failed to fetch videos' });

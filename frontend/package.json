@@ -13,10 +13,12 @@
     "@tailwindcss/typography": "^0.5.20",
     "clsx": "^2.1.1",
     "firebase": "^12.17.1",
+    "framer-motion": "^13.0.0",
     "jodit-react": "^5.4.69",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-intersection-observer": "^11.0.0",
     "react-router-dom": "^7.18.2",
     "tailwind-merge": "^3.6.0"
   },

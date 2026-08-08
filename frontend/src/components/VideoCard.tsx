@@ -47,7 +47,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
       
       <video
         ref={videoRef}
-        src={hasHovered ? optimizeCloudinaryUrl(video.videoUrl) : undefined}
+        src={hasHovered ? optimizeCloudinaryUrl(video.videoUrl, undefined, true) : undefined}
         preload="none"
         muted
         loop

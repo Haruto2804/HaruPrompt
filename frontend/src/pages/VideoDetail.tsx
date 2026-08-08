@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Video } from '../types';
 import { ArrowLeft, Loader2, Sparkles, AlertCircle, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../config';
 import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
@@ -75,7 +76,13 @@ const VideoDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.4 }}
+      className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8"
+    >
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => navigate('/')}
@@ -90,7 +97,7 @@ const VideoDetail: React.FC = () => {
           <div className="sticky top-24 z-50">
             <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/10 shadow-2xl group">
               <video
-                src={optimizeCloudinaryUrl(video.videoUrl)}
+                src={optimizeCloudinaryUrl(video.videoUrl, undefined, true)}
                 poster={optimizeCloudinaryUrl(video.thumbnailUrl)}
                 controls
                 autoPlay
@@ -179,7 +186,7 @@ const VideoDetail: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
