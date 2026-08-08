@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Video } from '../types';
-import { ArrowLeft, Loader2, Sparkles, AlertCircle, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, AlertCircle, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
@@ -12,6 +12,11 @@ const VideoDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
+  const [expandedBlocks, setExpandedBlocks] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedBlocks(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -122,12 +127,25 @@ const VideoDetail: React.FC = () => {
                       </div>
                     )}
                     <div className="p-6 sm:p-8 flex-1 flex flex-col relative">
-                      <div className="flex-1 text-zinc-300 text-lg leading-relaxed mb-6 font-medium">
+                      <div className={`flex-1 text-zinc-300 text-lg leading-relaxed mb-2 font-medium ${expandedBlocks[block.id || index.toString()] ? '' : 'line-clamp-3'}`}>
                         {block.text}
                       </div>
                       
+                      {block.text && block.text.length > 150 && (
+                        <button
+                          onClick={() => toggleExpand(block.id || index.toString())}
+                          className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mb-4 flex items-center gap-1 transition-colors self-start"
+                        >
+                          {expandedBlocks[block.id || index.toString()] ? (
+                            <>Rút gọn <ChevronUp size={16} /></>
+                          ) : (
+                            <>Xem thêm <ChevronDown size={16} /></>
+                          )}
+                        </button>
+                      )}
+                      
                       {block.text && (
-                        <div className="flex justify-end">
+                        <div className="flex justify-end mt-auto pt-4">
                           <button
                             onClick={() => handleCopy(block.text || '', block.id)}
                             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all font-medium text-sm border border-indigo-500/20 hover:border-indigo-500/40"

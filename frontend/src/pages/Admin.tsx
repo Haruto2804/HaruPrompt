@@ -358,9 +358,12 @@ const Admin: React.FC = () => {
                 className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 transition-colors"
               />
               {thumbnailFile && (
-                <p className="mt-2 text-sm text-green-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" /> Selected: {thumbnailFile.name}
-                </p>
+                <div className="mt-4">
+                  <p className="text-sm text-green-400 flex items-center gap-1 mb-2">
+                    <CheckCircle2 className="w-4 h-4" /> Selected: {thumbnailFile.name}
+                  </p>
+                  <img src={URL.createObjectURL(thumbnailFile)} alt="Preview" className="w-32 h-auto rounded-lg border border-white/10" />
+                </div>
               )}
             </div>
 
@@ -569,9 +572,12 @@ const Admin: React.FC = () => {
                 className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 transition-colors mb-4"
               />
               {editThumbnailFile && (
-                <p className="text-sm text-green-400 flex items-center gap-1 mb-4">
-                  <CheckCircle2 className="w-4 h-4" /> Selected: {editThumbnailFile.name}
-                </p>
+                <div className="mt-4 mb-4">
+                  <p className="text-sm text-green-400 flex items-center gap-1 mb-2">
+                    <CheckCircle2 className="w-4 h-4" /> Selected: {editThumbnailFile.name}
+                  </p>
+                  <img src={URL.createObjectURL(editThumbnailFile)} alt="Preview" className="w-32 h-auto rounded-lg border border-white/10" />
+                </div>
               )}
               <label className="block text-sm font-medium text-zinc-400 mb-2">Video Prompts (Blocks)</label>
               <div className="space-y-4">
