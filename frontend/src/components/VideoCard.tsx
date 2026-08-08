@@ -11,12 +11,16 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [hasHovered, setHasHovered] = useState(false);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
-    if (videoRef.current) {
-      videoRef.current.play().catch(error => console.error("Autoplay prevented:", error));
-    }
+    if (!hasHovered) setHasHovered(true);
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(error => console.error("Autoplay prevented:", error));
+      }
+    }, 50);
   };
 
   const handleMouseLeave = () => {
@@ -35,7 +39,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
       onClick={() => navigate(`/video/${video.id}`)}
     >
       <img 
-        src={optimizeCloudinaryUrl(video.thumbnailUrl)} 
+        src={optimizeCloudinaryUrl(video.thumbnailUrl, 500)} 
         alt="Thumbnail" 
         className={`absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${isHovered ? 'opacity-0' : 'opacity-100'}`}
         loading="lazy"
@@ -43,7 +47,8 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
       
       <video
         ref={videoRef}
-        src={optimizeCloudinaryUrl(video.videoUrl)}
+        src={hasHovered ? optimizeCloudinaryUrl(video.videoUrl) : undefined}
+        preload="none"
         muted
         loop
         playsInline
